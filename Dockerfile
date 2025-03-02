@@ -1,4 +1,4 @@
-FROM golang:alpine as build
+FROM golang:alpine AS build
 WORKDIR /app
 COPY proxy.go .
 RUN go build proxy.go
