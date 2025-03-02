@@ -82,6 +82,7 @@ func main() {
 
 	target, _ := url.Parse("https://api.individual.githubcopilot.com")
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.FlushInterval = -1
 
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
