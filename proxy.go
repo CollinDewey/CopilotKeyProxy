@@ -81,27 +81,21 @@ func main() {
 	}
 
 	target, _ := url.Parse("https://api.individual.githubcopilot.com")
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	proxy.FlushInterval = -1
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(target)
 
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-
-		req.Host = target.Host
-		token, err := authenticate(req.Header.Get("Authorization"))
-		if err != nil {
-			return
-		}
-		setHeaders("Bearer "+token, req)
+			token, err := authenticate(pr.In.Header.Get("Authorization"))
+			if err != nil {
+				return
+			}
+			setHeaders("Bearer "+token, pr.Out)
+		},
+		FlushInterval: -1,
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		proxy.ServeHTTP(w, r)
-	})
-
 	fmt.Printf("Starting reverse proxy server on %s\n", listenAddr)
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+	if err := http.ListenAndServe(listenAddr, proxy); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
